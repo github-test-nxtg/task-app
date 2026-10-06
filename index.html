@@ -136,12 +136,26 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
 .cal .wd{text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0}
 .cal .wd.sun{color:var(--danger)}
 .cal .wd.sat{color:var(--strong)}
-.cd{aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
+.cd{aspect-ratio:1/1;width:100%;padding:0;border:none;background:transparent;color:var(--text);font-family:inherit;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
+button.cd:hover{background:var(--surface2)}
+.dd{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.dd-hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.dd-hd b{font-size:16px;font-weight:700}
+.dd-hd span{font-size:14px;font-weight:700;color:var(--strong);white-space:nowrap}
+.dd ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.dd li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border2);font-size:15px;font-weight:500}
+.dd li:last-child{border-bottom:none}
+.dd li .mk{width:24px;height:24px;flex-shrink:0;border-radius:7px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center}
+.dd li .mk.gift{background:var(--tint);color:var(--strong)}
+.dd li em{margin-left:auto;font-style:normal;font-size:13px;color:var(--muted);white-space:nowrap}
+.dd .sub{font-size:12px;font-weight:700;color:var(--muted);margin-top:4px}
+.dd .none{font-size:14px;color:var(--muted);margin:0;line-height:1.7}
 .cd.part{background:var(--tint);color:var(--strong);font-weight:700}
 .cd.full{background:var(--accent);color:var(--on-accent);font-weight:700}
 .cd.today{box-shadow:inset 0 0 0 2px var(--strong)}
 .cd.full.today{box-shadow:inset 0 0 0 2px var(--accent),inset 0 0 0 4px var(--surface)}
 .cd.future{color:var(--muted);opacity:.5}
+.cd.sel{outline:2px solid var(--text);outline-offset:1px}
 .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;font-weight:500;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
@@ -280,6 +294,7 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
   var tab = 'today';
   var unlocked = false;
   var calOffset = 0;
+  var selDay = '';
   var renderedDay = '';
 
   function pad(n){ return (n<10?'0':'')+n; }
@@ -376,7 +391,11 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
     var k = todayKey(), d = day(k);
     var i = d.done.indexOf(id);
     if(i>-1){ d.done.splice(i,1); S.points = Math.max(0, S.points - t.pts); d.earned -= t.pts; }
-    else { d.done.push(id); S.points += t.pts; d.earned += t.pts; }
+    else {
+      d.done.push(id); S.points += t.pts; d.earned += t.pts;
+      if(!d.names) d.names = {};
+      d.names[id] = {title:t.title, pts:t.pts};
+    }
     var all = S.tasks.length>0 && S.tasks.every(function(x){ return d.done.indexOf(x.id)>-1; });
     if(all && !d.bonus){ d.bonus = true; S.points += BONUS; d.earned += BONUS; toast('全部完了！ボーナス +'+BONUS+'pt'); }
     else if(!all && d.bonus){ d.bonus = false; S.points = Math.max(0, S.points - BONUS); d.earned -= BONUS; }
@@ -483,18 +502,51 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
       '<button type="button" class="cal-nav" data-act="cal-prev" aria-label="前の月"'+(calOffset<=-24?' disabled':'')+'><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>'+
       '<b>'+y+'年 '+(m+1)+'月</b>'+
       '<button type="button" class="cal-nav" data-act="cal-next" aria-label="次の月"'+(calOffset>=0?' disabled':'')+'><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>'+
-      '</div><div class="cal" role="grid" aria-label="'+y+'年'+(m+1)+'月のカレンダー">';
-    WD.forEach(function(w,i){ h += '<div class="wd'+(i===0?' sun':i===6?' sat':'')+'" role="columnheader">'+w+'</div>'; });
+      '</div><div class="cal" aria-label="'+y+'年'+(m+1)+'月のカレンダー">';
+    WD.forEach(function(w,i){ h += '<div class="wd'+(i===0?' sun':i===6?' sat':'')+'" aria-hidden="true">'+w+'</div>'; });
     for(var b=0;b<first.getDay();b++) h += '<div aria-hidden="true"></div>';
     for(var dnum=1; dnum<=daysIn; dnum++){
       var dt = new Date(y,m,dnum), k = keyOf(dt), d = peekDay(k);
       var future = dt > now && k!==tk;
       var c = d && d.complete ? 'full' : (d && d.done.length ? 'part' : '');
       var state = c==='full' ? '全部できた' : c==='part' ? '少しできた' : (future ? '' : '記録なし');
-      h += '<div class="cd '+c+(k===tk?' today':'')+(future?' future':'')+'" role="gridcell" aria-label="'+(m+1)+'月'+dnum+'日 '+state+'">'+dnum+'</div>';
+      var cls = 'cd '+c+(k===tk?' today':'')+(future?' future':'')+(k===selDay?' sel':'');
+      var lab = (m+1)+'月'+dnum+'日（'+WD[dt.getDay()]+'） '+state;
+      if(future) h += '<div class="'+cls+'" aria-label="'+lab+'">'+dnum+'</div>';
+      else h += '<button type="button" class="'+cls+'" data-act="pick-day" data-k="'+k+'" aria-label="'+lab+'" aria-pressed="'+(k===selDay)+'">'+dnum+'</button>';
     }
     h += '</div><div class="legend"><span><i style="background:var(--accent)"></i>全部できた</span>'+
-      '<span><i style="background:var(--tint)"></i>少しできた</span></div></section>';
+      '<span><i style="background:var(--tint)"></i>少しできた</span></div>';
+    h += '<div class="dd" aria-live="polite">';
+    if(!selDay){
+      h += '<p class="none">日付をタップすると、その日にできたタスクが見られます。</p>';
+    } else {
+      var sd = fromKey(selDay), sdd = peekDay(selDay);
+      var ids = sdd ? sdd.done : [];
+      var earned = sdd ? Math.max(0, sdd.earned||0) : 0;
+      h += '<div class="dd-hd"><b>'+(sd.getMonth()+1)+'月'+sd.getDate()+'日（'+WD[sd.getDay()]+'）</b>'+(earned?'<span>+'+earned+'pt</span>':'')+'</div>';
+      if(!ids.length){
+        h += '<p class="none">この日のタスクの記録はありません。</p>';
+      } else {
+        h += '<div class="sub">できたタスク</div><ul>';
+        ids.forEach(function(id){
+          var cur = S.tasks.filter(function(x){return x.id===id;})[0];
+          var saved = sdd.names && sdd.names[id];
+          var title = cur ? cur.title : (saved ? saved.title : '（削除したタスク）');
+          var pts = saved ? saved.pts : (cur ? cur.pts : null);
+          h += '<li><span class="mk">'+svg('check',16,3)+'</span>'+esc(title)+(pts!=null?'<em>+'+pts+'pt</em>':'')+'</li>';
+        });
+        if(sdd.bonus) h += '<li><span class="mk">'+svg('check',16,3)+'</span>全部完了ボーナス<em>+'+BONUS+'pt</em></li>';
+        h += '</ul>';
+      }
+      var got = S.history.filter(function(x){ return x.date===selDay; });
+      if(got.length){
+        h += '<div class="sub">交換したごほうび</div><ul>';
+        got.forEach(function(x){ h += '<li><span class="mk gift">'+svg('gift',16,2.2)+'</span>'+esc(x.title)+'<em>−'+x.cost+'pt</em></li>'; });
+        h += '</ul>';
+      }
+    }
+    h += '</div></section>';
     h += '<h2 class="sec-t">交換したごほうび</h2>';
     if(!S.history.length){
       h += '<div class="card empty">まだ交換していません。<br>ポイントをためて「ごほうび」で交換しよう。</div>';
@@ -589,7 +641,7 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
     var b = e.target.closest('[data-tab]'); if(!b) return;
     tab = b.getAttribute('data-tab');
     if(tab!=='settings') unlocked = false;
-    calOffset = 0;
+    calOffset = 0; selDay = '';
     render(); window.scrollTo(0,0);
   });
 
@@ -598,8 +650,14 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
     var act = b.getAttribute('data-act'), id = b.getAttribute('data-id');
     if(act==='toggle') toggleTask(id);
     else if(act==='redeem') redeem(id);
-    else if(act==='cal-prev'){ calOffset = Math.max(-24, calOffset-1); render(); }
-    else if(act==='cal-next'){ calOffset = Math.min(0, calOffset+1); render(); }
+    else if(act==='cal-prev'){ calOffset = Math.max(-24, calOffset-1); selDay=''; render(); }
+    else if(act==='cal-next'){ calOffset = Math.min(0, calOffset+1); selDay=''; render(); }
+    else if(act==='pick-day'){
+      var pk = b.getAttribute('data-k');
+      selDay = (selDay===pk) ? '' : pk;
+      var y0 = window.scrollY; render(); window.scrollTo(0, y0);
+      var nb = document.querySelector('[data-act="pick-day"][data-k="'+pk+'"]'); if(nb) nb.focus({preventScroll:true});
+    }
     else if(act==='accent'){ S.accent = b.getAttribute('data-c'); save(); render(); toast('テーマカラーを「'+b.getAttribute('aria-label')+'」にしました'); }
     else if(act==='add-task'){
       S.tasks.push({id:uid(), title:'新しいタスク', when:'放課後', mins:10, pts:10}); save(); render();
