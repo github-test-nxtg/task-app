@@ -15,13 +15,18 @@
   --bg:#EFF1F2;--surface:#FBFBFA;--surface2:#E9EBEC;--border:#DCDFE2;--border2:#E1E4E6;
   --text:#2B3138;--muted:#646B72;--strong:#46627F;--tint:#E3E9EF;
   --t-morning-bg:#EFEAE2;--t-morning-fg:#6E5C45;
-  --t-after-bg:#E3E9EF;--t-after-fg:#46627F;
+  --t-after-bg:var(--tint);--t-after-fg:var(--strong);
   --t-night-bg:#E8E6EA;--t-night-fg:#5E5868;
   --check-border:#A9B0B6;--accent:#557392;--on-accent:#FFFFFF;--danger:#9A4B45;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
+/* テーマカラー：アクセント・強調色・淡い色・背景まで切り替える */
+:root[data-accent="blue"]{--accent:#557392;--strong:#46627F;--tint:#E3E9EF;--bg:#EEF1F4}
+:root[data-accent="sage"]{--accent:#5A7872;--strong:#4A6660;--tint:#E0EAE6;--bg:#EDF2EF}
+:root[data-accent="violet"]{--accent:#7A6F8E;--strong:#64587A;--tint:#E9E4F0;--bg:#F1EFF4}
+:root[data-accent="slate"]{--accent:#4F5A65;--strong:#3F4952;--tint:#E2E5E9;--bg:#EEEFF0}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#16191C;--surface:#1F2327;--surface2:#1A1D20;--border:#2E3439;--border2:#272C30;
@@ -315,7 +320,12 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
   }
 
   function applyAccent(){
-    document.documentElement.style.setProperty('--accent', S.accent || '#557392');
+    var keys = {'#557392':'blue','#5A7872':'sage','#7A6F8E':'violet','#4F5A65':'slate'};
+    var key = keys[S.accent] || 'blue';
+    document.documentElement.setAttribute('data-accent', key);
+    document.documentElement.style.removeProperty('--accent');
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#EFF1F2');
   }
 
   /* ---------- icons ---------- */
@@ -590,7 +600,7 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
     else if(act==='redeem') redeem(id);
     else if(act==='cal-prev'){ calOffset = Math.max(-24, calOffset-1); render(); }
     else if(act==='cal-next'){ calOffset = Math.min(0, calOffset+1); render(); }
-    else if(act==='accent'){ S.accent = b.getAttribute('data-c'); save(); render(); }
+    else if(act==='accent'){ S.accent = b.getAttribute('data-c'); save(); render(); toast('テーマカラーを「'+b.getAttribute('aria-label')+'」にしました'); }
     else if(act==='add-task'){
       S.tasks.push({id:uid(), title:'新しいタスク', when:'放課後', mins:10, pts:10}); save(); render();
       var ins = document.querySelectorAll('[data-task][data-f="title"]'); var last = ins[ins.length-1];
