@@ -123,6 +123,23 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
 .dot.part{background:var(--tint);color:var(--strong);border-color:var(--tint)}
 .dot.full{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .dot.today{outline:2px solid var(--strong);outline-offset:2px}
+.cal-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.cal-hd b{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.cal-nav{width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);display:flex;align-items:center;justify-content:center}
+.cal-nav:disabled{opacity:.35;cursor:not-allowed}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .wd{text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:4px 0}
+.cal .wd.sun{color:var(--danger)}
+.cal .wd.sat{color:var(--strong)}
+.cd{aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
+.cd.part{background:var(--tint);color:var(--strong);font-weight:700}
+.cd.full{background:var(--accent);color:var(--on-accent);font-weight:700}
+.cd.today{box-shadow:inset 0 0 0 2px var(--strong)}
+.cd.full.today{box-shadow:inset 0 0 0 2px var(--accent),inset 0 0 0 4px var(--surface)}
+.cd.future{color:var(--muted);opacity:.5}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;font-weight:500;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
 .stat small{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:4px}
 .stat b{font-size:26px;font-weight:700;color:var(--strong);font-variant-numeric:tabular-nums}
@@ -257,6 +274,7 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
 
   var tab = 'today';
   var unlocked = false;
+  var calOffset = 0;
   var renderedDay = '';
 
   function pad(n){ return (n<10?'0':'')+n; }
@@ -375,13 +393,9 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
   /* ---------- views ---------- */
   function header(title){
     var t = new Date();
-    var st = streak();
     return '<header class="hd"><div class="hd-l">'+
       '<span class="date">'+(t.getMonth()+1)+'月'+t.getDate()+'日（'+WD[t.getDay()]+'）</span>'+
       '<h1>'+esc(title)+'</h1>'+
-      (tab==='today' ? (st>0
-        ? '<span class="streak">'+svg('flame',16,2.2)+st+'日連続で達成中</span>'
-        : '<span class="streak">'+svg('flame',16,2.2)+'全部終えて連続記録をスタート</span>') : '')+
       '</div><div class="pill"><small>ポイント</small><b>'+S.points+'<span> pt</span></b></div></header>';
   }
 
@@ -441,18 +455,36 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
 
   function viewRecords(){
     var h = header('記録');
-    var st = streak(), we = weekEarned();
-    h += '<div class="stats"><div class="card stat"><small>連続達成</small><b>'+st+'<span> 日</span></b></div>'+
-      '<div class="card stat"><small>今週ためたポイント</small><b>'+we+'<span> pt</span></b></div></div>';
-    var s = weekStart(), tk = todayKey(), total = S.tasks.length;
-    h += '<section class="card"><div class="lbl">今週の達成</div><div class="week">';
-    for(var i=0;i<7;i++){
-      var dt = addDays(s,i), k = keyOf(dt), d = peekDay(k);
-      var c = d && d.complete ? 'full' : (d && d.done.length ? 'part' : '');
-      var label = d && d.complete ? svg('check',16,3) : (d && d.done.length && total ? doneCount(k)+'/'+total : '');
-      h += '<div class="day"><span class="dot '+c+(k===tk?' today':'')+'" aria-label="'+(dt.getMonth()+1)+'月'+dt.getDate()+'日 '+(c==='full'?'全部完了':c==='part'?'一部完了':'記録なし')+'">'+label+'</span>'+WD[dt.getDay()]+'</div>';
+    var now = new Date(), tk = todayKey();
+    var y = now.getFullYear(), m = now.getMonth() + calOffset;
+    var first = new Date(y, m, 1);
+    y = first.getFullYear(); m = first.getMonth();
+    var daysIn = new Date(y, m+1, 0).getDate();
+    var activeDays = 0, monthPts = 0;
+    for(var j=1;j<=daysIn;j++){
+      var dd = peekDay(keyOf(new Date(y,m,j)));
+      if(dd && dd.done.length){ activeDays++; }
+      if(dd) monthPts += dd.earned||0;
     }
-    h += '</div></section>';
+    h += '<div class="stats"><div class="card stat"><small>'+(m+1)+'月にタスクをした日</small><b>'+activeDays+'<span> 日</span></b></div>'+
+      '<div class="card stat"><small>'+(m+1)+'月にためたポイント</small><b>'+Math.max(0,monthPts)+'<span> pt</span></b></div></div>';
+
+    h += '<section class="card"><div class="cal-hd">'+
+      '<button type="button" class="cal-nav" data-act="cal-prev" aria-label="前の月"'+(calOffset<=-24?' disabled':'')+'><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>'+
+      '<b>'+y+'年 '+(m+1)+'月</b>'+
+      '<button type="button" class="cal-nav" data-act="cal-next" aria-label="次の月"'+(calOffset>=0?' disabled':'')+'><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>'+
+      '</div><div class="cal" role="grid" aria-label="'+y+'年'+(m+1)+'月のカレンダー">';
+    WD.forEach(function(w,i){ h += '<div class="wd'+(i===0?' sun':i===6?' sat':'')+'" role="columnheader">'+w+'</div>'; });
+    for(var b=0;b<first.getDay();b++) h += '<div aria-hidden="true"></div>';
+    for(var dnum=1; dnum<=daysIn; dnum++){
+      var dt = new Date(y,m,dnum), k = keyOf(dt), d = peekDay(k);
+      var future = dt > now && k!==tk;
+      var c = d && d.complete ? 'full' : (d && d.done.length ? 'part' : '');
+      var state = c==='full' ? '全部できた' : c==='part' ? '少しできた' : (future ? '' : '記録なし');
+      h += '<div class="cd '+c+(k===tk?' today':'')+(future?' future':'')+'" role="gridcell" aria-label="'+(m+1)+'月'+dnum+'日 '+state+'">'+dnum+'</div>';
+    }
+    h += '</div><div class="legend"><span><i style="background:var(--accent)"></i>全部できた</span>'+
+      '<span><i style="background:var(--tint)"></i>少しできた</span></div></section>';
     h += '<h2 class="sec-t">交換したごほうび</h2>';
     if(!S.history.length){
       h += '<div class="card empty">まだ交換していません。<br>ポイントをためて「ごほうび」で交換しよう。</div>';
@@ -547,6 +579,7 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
     var b = e.target.closest('[data-tab]'); if(!b) return;
     tab = b.getAttribute('data-tab');
     if(tab!=='settings') unlocked = false;
+    calOffset = 0;
     render(); window.scrollTo(0,0);
   });
 
@@ -555,6 +588,8 @@ h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em
     var act = b.getAttribute('data-act'), id = b.getAttribute('data-id');
     if(act==='toggle') toggleTask(id);
     else if(act==='redeem') redeem(id);
+    else if(act==='cal-prev'){ calOffset = Math.max(-24, calOffset-1); render(); }
+    else if(act==='cal-next'){ calOffset = Math.min(0, calOffset+1); render(); }
     else if(act==='accent'){ S.accent = b.getAttribute('data-c'); save(); render(); }
     else if(act==='add-task'){
       S.tasks.push({id:uid(), title:'新しいタスク', when:'放課後', mins:10, pts:10}); save(); render();
