@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EFF1F2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>今日のプラン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  --bg:#EFF1F2;--surface:#FBFBFA;--surface2:#E9EBEC;--border:#DCDFE2;--border2:#E1E4E6;
+  --text:#2B3138;--muted:#646B72;--strong:#46627F;--tint:#E3E9EF;
+  --t-morning-bg:#EFEAE2;--t-morning-fg:#6E5C45;
+  --t-after-bg:#E3E9EF;--t-after-fg:#46627F;
+  --t-night-bg:#E8E6EA;--t-night-fg:#5E5868;
+  --check-border:#A9B0B6;--accent:#557392;--on-accent:#FFFFFF;--danger:#9A4B45;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16191C;--surface:#1F2327;--surface2:#1A1D20;--border:#2E3439;--border2:#272C30;
+    --text:#E6E8EA;--muted:#A0A7AE;--strong:#A9BFD6;--tint:#26313B;
+    --t-morning-bg:#2E2a24;--t-morning-fg:#D2C2A8;
+    --t-after-bg:#26313B;--t-after-fg:#A9BFD6;
+    --t-night-bg:#2B2830;--t-night-fg:#C3BACF;
+    --check-border:#5C646B;--danger:#E0A39D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16191C;--surface:#1F2327;--surface2:#1A1D20;--border:#2E3439;--border2:#272C30;
+  --text:#E6E8EA;--muted:#A0A7AE;--strong:#A9BFD6;--tint:#26313B;
+  --t-morning-bg:#2E2a24;--t-morning-fg:#D2C2A8;
+  --t-after-bg:#26313B;--t-after-fg:#A9BFD6;
+  --t-night-bg:#2B2830;--t-night-fg:#C3BACF;
+  --check-border:#5C646B;--danger:#E0A39D;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:'Zen Kaku Gothic New','Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,select{font-family:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+img,svg{max-width:100%}
+.app{max-width:520px;margin:0 auto;padding:20px 20px 120px}
+.hidden{display:none!important}
+
+/* header */
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:8px 4px 14px}
+.hd-l{display:flex;flex-direction:column;gap:4px;min-width:0}
+.date{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:.04em}
+h1{margin:0;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.02em}
+.streak{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--strong)}
+.pill{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px 12px}
+.pill small{font-size:11px;font-weight:500;color:var(--muted)}
+.pill b{font-size:20px;font-weight:700;color:var(--strong);font-variant-numeric:tabular-nums}
+.pill b span{font-size:12px;font-weight:500}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 20px}
+.prog{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.prog-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.prog-top span{font-size:15px;font-weight:700}
+.prog-top b{font-size:32px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.prog-top b small{font-size:16px}
+.bar{height:6px;background:var(--surface2);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s ease}
+.prog-bot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:500;color:var(--muted)}
+
+.group{margin:0 0 16px}
+.group h2{margin:0 4px 8px;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.list{display:flex;flex-direction:column;gap:8px}
+.task{width:100%;min-height:68px;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;text-align:left;
+  background:var(--surface);border:1px solid var(--border);transition:background .15s}
+.task.done{background:var(--surface2);border-color:var(--border2)}
+.ic{width:42px;height:42px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.ic.morning{background:var(--t-morning-bg);color:var(--t-morning-fg)}
+.ic.after{background:var(--t-after-bg);color:var(--t-after-fg)}
+.ic.night{background:var(--t-night-bg);color:var(--t-night-fg)}
+.task.done .ic{opacity:.6}
+.tx{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tx b{font-size:16px;font-weight:700;overflow-wrap:anywhere}
+.task.done .tx b{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.tx small{font-size:12px;font-weight:500;color:var(--muted)}
+.pts{font-size:14px;font-weight:700;color:var(--strong);white-space:nowrap}
+.chk{width:32px;height:32px;flex-shrink:0;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1.5px solid var(--check-border);transition:transform .15s}
+.task.done .chk{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.task:active .chk{transform:scale(.9)}
+
+.empty{text-align:center;padding:28px 16px;color:var(--muted);font-size:14px;line-height:1.7}
+.notice{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--tint);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:14px;font-weight:500;color:var(--strong)}
+
+/* rewards */
+.bal{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.bal-l{display:flex;flex-direction:column;gap:2px}
+.bal-l small,.bal-r small{font-size:13px;font-weight:500;color:var(--muted)}
+.bal-l b{font-size:32px;font-weight:700;line-height:1.1;color:var(--strong);font-variant-numeric:tabular-nums}
+.bal-l b span{font-size:16px;font-weight:500}
+.bal-r{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
+.bal-r b{font-size:15px;font-weight:700;color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.rw{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.rw .ic{width:52px;height:52px;border-radius:14px;background:var(--tint);color:var(--strong)}
+.rw b{font-size:15px;font-weight:700;line-height:1.4;min-height:42px;display:flex;align-items:center;overflow-wrap:anywhere}
+.rw .cost{font-size:14px;font-weight:700;color:var(--strong)}
+.btn{width:100%;min-height:44px;border-radius:10px;font-size:14px;font-weight:700;border:none;background:var(--accent);color:var(--on-accent)}
+.btn:disabled{background:var(--bg);color:var(--muted);border:1px dashed var(--check-border);cursor:not-allowed}
+.btn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn.danger{background:var(--surface);color:var(--danger);border:1px solid var(--border)}
+
+/* records */
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px}
+.day{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--muted)}
+.dot{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border2);font-size:11px;font-weight:700;color:var(--muted)}
+.dot.part{background:var(--tint);color:var(--strong);border-color:var(--tint)}
+.dot.full{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.dot.today{outline:2px solid var(--strong);outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.stat small{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:4px}
+.stat b{font-size:26px;font-weight:700;color:var(--strong);font-variant-numeric:tabular-nums}
+.stat b span{font-size:14px;font-weight:500}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.hist li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border2);font-size:14px}
+.hist li:last-child{border-bottom:none}
+.hist li span{color:var(--muted);font-size:13px;white-space:nowrap}
+.sec-t{margin:22px 4px 8px;font-size:15px;font-weight:700}
+
+/* settings */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label,.lbl{font-size:13px;font-weight:700;color:var(--muted)}
+.inp{width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:16px}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.sw{width:44px;height:44px;border-radius:12px;border:2px solid transparent}
+.sw[aria-pressed="true"]{border-color:var(--text);box-shadow:inset 0 0 0 3px var(--surface)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;align-items:start;padding:12px 0;border-bottom:1px solid var(--border2)}
+.row:last-of-type{border-bottom:none}
+.row-f{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.row-f.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mini{display:flex;flex-direction:column;gap:4px}
+.mini span{font-size:11px;font-weight:700;color:var(--muted)}
+.icon-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--danger);display:flex;align-items:center;justify-content:center}
+.add{margin-top:10px}
+.adj{display:flex;align-items:center;gap:10px}
+.adj b{flex:1;text-align:center;font-size:24px;font-weight:700;color:var(--strong);font-variant-numeric:tabular-nums}
+.adj .btn{width:72px}
+.help{font-size:12px;color:var(--muted);line-height:1.7;margin:6px 0 0}
+.lock{max-width:320px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:14px}
+.lock .inp{text-align:center;letter-spacing:.4em;font-size:22px}
+.err{color:var(--danger);font-size:13px;font-weight:700;min-height:18px}
+
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));z-index:10}
+.nav-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.nav button{min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;
+  color:var(--muted);font-size:12px;font-weight:700;border-radius:14px}
+.nav button[aria-current="page"]{background:var(--tint);color:var(--accent)}
+
+/* modal + toast */
+.scrim{position:fixed;inset:0;background:rgba(20,24,28,.45);display:flex;align-items:flex-end;justify-content:center;z-index:30;padding:16px}
+@media (min-width:560px){.scrim{align-items:center}}
+.modal{width:100%;max-width:420px;background:var(--surface);border-radius:20px;padding:22px 20px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.modal h3{margin:0;font-size:18px;font-weight:700}
+.modal p{margin:0;font-size:14px;line-height:1.7;color:var(--muted)}
+.modal .acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:6px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);
+  background:var(--text);color:var(--bg);padding:12px 16px;border-radius:12px;font-size:14px;font-weight:700;z-index:40;text-align:center;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="app" id="view" aria-live="polite"></main>
+
+<nav class="nav" aria-label="メニュー">
+  <div class="nav-in">
+    <button type="button" data-tab="today">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>今日</button>
+    <button type="button" data-tab="rewards">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-1-3-5-4-5-1.5S10 7 12 7c2 0 5-.5 5-2.5S13 4 12 7z"/></svg>ごほうび</button>
+    <button type="button" data-tab="records">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg>記録</button>
+    <button type="button" data-tab="settings">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>設定</button>
+  </div>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  'use strict';
+  var KEY = 'kids-task-app-v1';
+  var ACCENTS = [
+    {c:'#557392', n:'スモーキーブルー'},
+    {c:'#5A7872', n:'セージグリーン'},
+    {c:'#7A6F8E', n:'ダスティバイオレット'},
+    {c:'#4F5A65', n:'スレート'}
+  ];
+  var WHENS = [
+    {k:'朝', cls:'morning'},
+    {k:'放課後', cls:'after'},
+    {k:'夜', cls:'night'}
+  ];
+  var BONUS = 20;
+  var WD = ['日','月','火','水','木','金','土'];
+
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+  function defaults(){
+    return {
+      v:1, name:'', accent:'#557392', weeklyGoal:300, points:0, pin:'',
+      tasks:[
+        {id:uid(), title:'宿題', when:'放課後', mins:30, pts:30},
+        {id:uid(), title:'漢字の練習', when:'放課後', mins:15, pts:15},
+        {id:uid(), title:'読書', when:'放課後', mins:30, pts:20},
+        {id:uid(), title:'洗濯物をたたむ', when:'夜', mins:10, pts:15},
+        {id:uid(), title:'明日の持ち物の準備', when:'夜', mins:10, pts:10}
+      ],
+      rewards:[
+        {id:uid(), title:'ゲーム時間 +30分', cost:150},
+        {id:uid(), title:'週末のおやつを選べる', cost:100},
+        {id:uid(), title:'夕飯のメニューを決める', cost:200},
+        {id:uid(), title:'友だちと出かける日', cost:400}
+      ],
+      days:{}, history:[]
+    };
+  }
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(raw){
+        var s = JSON.parse(raw);
+        if(s && Array.isArray(s.tasks) && Array.isArray(s.rewards)){
+          var d = defaults();
+          for(var k in d){ if(!(k in s)) s[k] = d[k]; }
+          return s;
+        }
+      }
+    }catch(e){}
+    return defaults();
+  }
+  var S = load();
+  var storageOk = true;
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(S)); storageOk = true; }
+    catch(e){ storageOk = false; }
+  }
+
+  var tab = 'today';
+  var unlocked = false;
+  var renderedDay = '';
+
+  function pad(n){ return (n<10?'0':'')+n; }
+  function keyOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function todayKey(){ return keyOf(new Date()); }
+  function fromKey(k){ var p=k.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function num(v, def, min, max){ var n=parseInt(v,10); if(isNaN(n)) n=def; if(min!=null) n=Math.max(min,n); if(max!=null) n=Math.min(max,n); return n; }
+
+  function day(k){
+    if(!S.days[k]) S.days[k] = {done:[], bonus:false, earned:0, complete:false};
+    return S.days[k];
+  }
+  function peekDay(k){ return S.days[k] || null; }
+  function doneCount(k){
+    var d = peekDay(k); if(!d) return 0;
+    return S.tasks.filter(function(t){ return d.done.indexOf(t.id) > -1; }).length;
+  }
+  function streak(){
+    var t = new Date(); var n = 0;
+    var d0 = peekDay(keyOf(t));
+    var cur = (d0 && d0.complete) ? t : addDays(t,-1);
+    while(true){
+      var dd = peekDay(keyOf(cur));
+      if(dd && dd.complete){ n++; cur = addDays(cur,-1); } else break;
+    }
+    return n;
+  }
+  function weekStart(){
+    var t = new Date(); var wd = (t.getDay()+6)%7;
+    return addDays(new Date(t.getFullYear(), t.getMonth(), t.getDate()), -wd);
+  }
+  function weekEarned(){
+    var s = weekStart(), sum = 0;
+    for(var i=0;i<7;i++){ var d = peekDay(keyOf(addDays(s,i))); if(d) sum += d.earned||0; }
+    return sum;
+  }
+
+  function applyAccent(){
+    document.documentElement.style.setProperty('--accent', S.accent || '#557392');
+  }
+
+  /* ---------- icons ---------- */
+  var ICON = {
+    '朝':'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    '放課後':'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/>',
+    '夜':'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+    gift:'<path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-1-3-5-4-5-1.5S10 7 12 7c2 0 5-.5 5-2.5S13 4 12 7z"/>',
+    check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    flame:'<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1 1 2 2 3 2 0-2-1-4 0-6z"/>',
+    trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'
+  };
+  function svg(name, size, sw){
+    return '<svg width="'+(size||24)+'" height="'+(size||24)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[name]+'</svg>';
+  }
+  function whenCls(w){ for(var i=0;i<WHENS.length;i++) if(WHENS[i].k===w) return WHENS[i].cls; return 'after'; }
+
+  /* ---------- toast & modal ---------- */
+  var toastTimer;
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+  }
+  function modal(opts){
+    var prev = document.activeElement;
+    var scrim = document.createElement('div');
+    scrim.className = 'scrim';
+    scrim.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">'+
+      '<h3 id="mt">'+esc(opts.title)+'</h3>'+(opts.body?'<p>'+esc(opts.body)+'</p>':'')+
+      '<div class="acts"><button type="button" class="btn ghost" data-m="no">'+esc(opts.cancel||'やめる')+'</button>'+
+      '<button type="button" class="btn'+(opts.danger?' danger':'')+'" data-m="yes">'+esc(opts.ok||'OK')+'</button></div></div>';
+    function close(){ scrim.remove(); document.removeEventListener('keydown', onKey); if(prev && prev.focus) prev.focus(); }
+    function onKey(e){ if(e.key==='Escape') close(); }
+    scrim.addEventListener('click', function(e){
+      if(e.target===scrim){ close(); return; }
+      var b = e.target.closest('[data-m]'); if(!b) return;
+      close(); if(b.getAttribute('data-m')==='yes' && opts.onOk) opts.onOk();
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(scrim);
+    scrim.querySelector('[data-m="yes"]').focus();
+  }
+
+  /* ---------- actions ---------- */
+  function toggleTask(id){
+    var t = S.tasks.filter(function(x){return x.id===id;})[0]; if(!t) return;
+    var k = todayKey(), d = day(k);
+    var i = d.done.indexOf(id);
+    if(i>-1){ d.done.splice(i,1); S.points = Math.max(0, S.points - t.pts); d.earned -= t.pts; }
+    else { d.done.push(id); S.points += t.pts; d.earned += t.pts; }
+    var all = S.tasks.length>0 && S.tasks.every(function(x){ return d.done.indexOf(x.id)>-1; });
+    if(all && !d.bonus){ d.bonus = true; S.points += BONUS; d.earned += BONUS; toast('全部完了！ボーナス +'+BONUS+'pt'); }
+    else if(!all && d.bonus){ d.bonus = false; S.points = Math.max(0, S.points - BONUS); d.earned -= BONUS; }
+    d.complete = all;
+    save(); render();
+  }
+  function redeem(id){
+    var r = S.rewards.filter(function(x){return x.id===id;})[0]; if(!r) return;
+    if(S.points < r.cost) return;
+    modal({
+      title:'「'+r.title+'」と交換する？',
+      body: r.cost+'pt を使います。交換したら家の人に見せてね。',
+      ok:'交換する',
+      onOk:function(){
+        S.points -= r.cost;
+        S.history.unshift({date:todayKey(), title:r.title, cost:r.cost});
+        S.history = S.history.slice(0,50);
+        save(); render();
+        toast('「'+r.title+'」と交換しました');
+      }
+    });
+  }
+
+  /* ---------- views ---------- */
+  function header(title){
+    var t = new Date();
+    var st = streak();
+    return '<header class="hd"><div class="hd-l">'+
+      '<span class="date">'+(t.getMonth()+1)+'月'+t.getDate()+'日（'+WD[t.getDay()]+'）</span>'+
+      '<h1>'+esc(title)+'</h1>'+
+      (tab==='today' ? (st>0
+        ? '<span class="streak">'+svg('flame',16,2.2)+st+'日連続で達成中</span>'
+        : '<span class="streak">'+svg('flame',16,2.2)+'全部終えて連続記録をスタート</span>') : '')+
+      '</div><div class="pill"><small>ポイント</small><b>'+S.points+'<span> pt</span></b></div></header>';
+  }
+
+  function viewToday(){
+    var k = todayKey(), d = peekDay(k) || {done:[]};
+    var total = S.tasks.length, dc = doneCount(k);
+    var pct = total ? Math.round(dc/total*100) : 0;
+    var all = total>0 && dc===total;
+    var h = header(S.name ? S.name+'の今日のプラン' : '今日のプラン');
+    if(!S.name){
+      h += '<div class="notice"><span>設定で名前を入れると、ここに表示されます</span></div>';
+    }
+    h += '<section class="card prog" aria-label="今日の達成率"><div class="prog-top"><span>今日の達成率</span><b>'+pct+'<small>%</small></b></div>'+
+      '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div>'+
+      '<div class="prog-bot"><span>'+dc+' / '+total+' 完了</span><span>'+(all?'全部完了！ボーナス +'+BONUS+'pt':'全部終えるとボーナス +'+BONUS+'pt')+'</span></div></section>';
+    if(!total){
+      h += '<div class="card empty">タスクがまだありません。<br>「設定」からやることを追加しましょう。</div>';
+      return h;
+    }
+    WHENS.forEach(function(w){
+      var ts = S.tasks.filter(function(t){ return t.when===w.k; });
+      if(!ts.length) return;
+      h += '<section class="group"><h2>'+w.k+'</h2><div class="list">';
+      ts.forEach(function(t){
+        var done = d.done.indexOf(t.id)>-1;
+        h += '<button type="button" class="task'+(done?' done':'')+'" data-act="toggle" data-id="'+t.id+'" aria-pressed="'+done+'">'+
+          '<span class="ic '+w.cls+'">'+svg(w.k,24)+'</span>'+
+          '<span class="tx"><b>'+esc(t.title)+'</b><small>目安 '+t.mins+'分</small></span>'+
+          '<span class="pts">+'+t.pts+'pt</span>'+
+          '<span class="chk">'+(done?svg('check',20,3):'')+'</span></button>';
+      });
+      h += '</div></section>';
+    });
+    return h;
+  }
+
+  function viewRewards(){
+    var we = weekEarned(), goal = S.weeklyGoal||0;
+    var left = Math.max(0, goal - we);
+    var h = header('ごほうび');
+    h += '<section class="card bal"><div class="bal-l"><small>使えるポイント</small><b>'+S.points+'<span> pt</span></b></div>'+
+      (goal>0 ? '<div class="bal-r"><small>今週の目標 '+goal+'pt</small><b>'+(left>0?'あと '+left+'pt':'達成！')+'</b></div>' : '')+
+      '</section>';
+    if(!S.rewards.length){
+      h += '<div class="card empty">ごほうびがまだありません。<br>「設定」から追加しましょう。</div>';
+      return h;
+    }
+    h += '<div class="grid">';
+    S.rewards.forEach(function(r){
+      var ok = S.points >= r.cost;
+      h += '<div class="rw"><span class="ic">'+svg('gift',28)+'</span><b>'+esc(r.title)+'</b><span class="cost">'+r.cost+' pt</span>'+
+        '<button type="button" class="btn" data-act="redeem" data-id="'+r.id+'"'+(ok?'':' disabled')+'>'+(ok?'交換する':'あと '+(r.cost-S.points)+'pt')+'</button></div>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  function viewRecords(){
+    var h = header('記録');
+    var st = streak(), we = weekEarned();
+    h += '<div class="stats"><div class="card stat"><small>連続達成</small><b>'+st+'<span> 日</span></b></div>'+
+      '<div class="card stat"><small>今週ためたポイント</small><b>'+we+'<span> pt</span></b></div></div>';
+    var s = weekStart(), tk = todayKey(), total = S.tasks.length;
+    h += '<section class="card"><div class="lbl">今週の達成</div><div class="week">';
+    for(var i=0;i<7;i++){
+      var dt = addDays(s,i), k = keyOf(dt), d = peekDay(k);
+      var c = d && d.complete ? 'full' : (d && d.done.length ? 'part' : '');
+      var label = d && d.complete ? svg('check',16,3) : (d && d.done.length && total ? doneCount(k)+'/'+total : '');
+      h += '<div class="day"><span class="dot '+c+(k===tk?' today':'')+'" aria-label="'+(dt.getMonth()+1)+'月'+dt.getDate()+'日 '+(c==='full'?'全部完了':c==='part'?'一部完了':'記録なし')+'">'+label+'</span>'+WD[dt.getDay()]+'</div>';
+    }
+    h += '</div></section>';
+    h += '<h2 class="sec-t">交換したごほうび</h2>';
+    if(!S.history.length){
+      h += '<div class="card empty">まだ交換していません。<br>ポイントをためて「ごほうび」で交換しよう。</div>';
+    } else {
+      h += '<div class="card" style="padding-top:6px;padding-bottom:6px"><ul class="hist">';
+      S.history.slice(0,20).forEach(function(x){
+        var d = fromKey(x.date);
+        h += '<li><b>'+esc(x.title)+'</b><span>'+(d.getMonth()+1)+'/'+d.getDate()+' ・ '+x.cost+'pt</span></li>';
+      });
+      h += '</ul></div>';
+    }
+    return h;
+  }
+
+  function viewSettings(){
+    if(S.pin && !unlocked){
+      return '<div class="lock"><h1>家の人用の設定</h1><p class="help" style="margin:0">暗証番号を入れてください</p>'+
+        '<label for="pin-in" class="hidden">暗証番号</label>'+
+        '<input id="pin-in" class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off">'+
+        '<div class="err" id="pin-err"></div>'+
+        '<button type="button" class="btn" data-act="unlock">開く</button></div>';
+    }
+    var h = '<header class="hd"><div class="hd-l"><span class="date">家の人用</span><h1>設定</h1></div></header>';
+
+    h += '<section class="card"><div class="field"><label for="f-name">名前</label>'+
+      '<input id="f-name" class="inp" data-set="name" value="'+esc(S.name)+'" placeholder="例：はると" maxlength="20"></div>'+
+      '<div class="field"><span class="lbl">テーマカラー</span><div class="swatches">';
+    ACCENTS.forEach(function(a){
+      h += '<button type="button" class="sw" data-act="accent" data-c="'+a.c+'" aria-label="'+a.n+'" aria-pressed="'+(S.accent===a.c)+'" style="background:'+a.c+'"></button>';
+    });
+    h += '</div></div><div class="field" style="margin-bottom:0"><label for="f-goal">今週の目標ポイント</label>'+
+      '<input id="f-goal" class="inp" type="number" inputmode="numeric" min="0" data-set="weeklyGoal" value="'+S.weeklyGoal+'"></div></section>';
+
+    h += '<h2 class="sec-t">タスク</h2><section class="card">';
+    if(!S.tasks.length) h += '<p class="help" style="margin:0 0 4px">タスクがありません。</p>';
+    S.tasks.forEach(function(t){
+      h += '<div class="row"><div><input class="inp" aria-label="タスク名" data-task="'+t.id+'" data-f="title" value="'+esc(t.title)+'" maxlength="30">'+
+        '<div class="row-f"><label class="mini"><span>時間帯</span><select class="inp" data-task="'+t.id+'" data-f="when">'+
+        WHENS.map(function(w){ return '<option'+(w.k===t.when?' selected':'')+'>'+w.k+'</option>'; }).join('')+
+        '</select></label><label class="mini"><span>目安(分)</span><input class="inp" type="number" inputmode="numeric" min="0" data-task="'+t.id+'" data-f="mins" value="'+t.mins+'"></label>'+
+        '<label class="mini"><span>ポイント</span><input class="inp" type="number" inputmode="numeric" min="0" data-task="'+t.id+'" data-f="pts" value="'+t.pts+'"></label></div></div>'+
+        '<button type="button" class="icon-btn" data-act="del-task" data-id="'+t.id+'" aria-label="「'+esc(t.title)+'」を削除">'+svg('trash',20)+'</button></div>';
+    });
+    h += '<button type="button" class="btn ghost add" data-act="add-task">タスクを追加</button></section>';
+
+    h += '<h2 class="sec-t">ごほうび</h2><section class="card">';
+    if(!S.rewards.length) h += '<p class="help" style="margin:0 0 4px">ごほうびがありません。</p>';
+    S.rewards.forEach(function(r){
+      h += '<div class="row"><div><input class="inp" aria-label="ごほうび名" data-rw="'+r.id+'" data-f="title" value="'+esc(r.title)+'" maxlength="30">'+
+        '<div class="row-f two"><label class="mini"><span>必要ポイント</span><input class="inp" type="number" inputmode="numeric" min="0" data-rw="'+r.id+'" data-f="cost" value="'+r.cost+'"></label></div></div>'+
+        '<button type="button" class="icon-btn" data-act="del-rw" data-id="'+r.id+'" aria-label="「'+esc(r.title)+'」を削除">'+svg('trash',20)+'</button></div>';
+    });
+    h += '<button type="button" class="btn ghost add" data-act="add-rw">ごほうびを追加</button></section>';
+
+    h += '<h2 class="sec-t">ポイントの調整</h2><section class="card"><div class="adj">'+
+      '<button type="button" class="btn ghost" data-act="adj" data-n="-10" aria-label="10ポイント減らす">−10</button>'+
+      '<b>'+S.points+' pt</b>'+
+      '<button type="button" class="btn ghost" data-act="adj" data-n="10" aria-label="10ポイント増やす">+10</button></div>'+
+      '<p class="help">お手伝いのごほうびや、まちがいの修正に使えます。</p></section>';
+
+    h += '<h2 class="sec-t">設定のロック</h2><section class="card">'+
+      '<div class="field"><label for="f-pin">'+(S.pin?'暗証番号を変更':'暗証番号（4〜8桁の数字）')+'</label>'+
+      '<input id="f-pin" class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="new-password"></div>'+
+      '<div class="err" id="setpin-err"></div>'+
+      '<div class="row-f two" style="margin-top:0"><button type="button" class="btn" data-act="set-pin">'+(S.pin?'変更する':'ロックする')+'</button>'+
+      (S.pin?'<button type="button" class="btn danger" data-act="clear-pin">ロックを外す</button>':'')+'</div>'+
+      '<p class="help">ロックすると、この設定画面を開くときに暗証番号が必要になります。</p></section>';
+
+    h += '<h2 class="sec-t">データ</h2><section class="card">'+
+      '<p class="help" style="margin:0 0 12px">データはこのスマホのブラウザの中にだけ保存されます。ほかの端末とは共有されません。</p>'+
+      '<button type="button" class="btn danger" data-act="reset">すべてのデータを消して最初から</button>'+
+      (storageOk?'':'<p class="err" style="margin-top:10px">このブラウザでは保存できませんでした。閉じると記録が消える場合があります。</p>')+
+      '</section>';
+    return h;
+  }
+
+  function render(){
+    applyAccent();
+    renderedDay = todayKey();
+    var v = document.getElementById('view');
+    var html = tab==='today' ? viewToday() : tab==='rewards' ? viewRewards() : tab==='records' ? viewRecords() : viewSettings();
+    v.innerHTML = html;
+    var btns = document.querySelectorAll('.nav button');
+    for(var i=0;i<btns.length;i++){
+      if(btns[i].getAttribute('data-tab')===tab) btns[i].setAttribute('aria-current','page');
+      else btns[i].removeAttribute('aria-current');
+    }
+  }
+
+  /* ---------- events ---------- */
+  document.querySelector('.nav').addEventListener('click', function(e){
+    var b = e.target.closest('[data-tab]'); if(!b) return;
+    tab = b.getAttribute('data-tab');
+    if(tab!=='settings') unlocked = false;
+    render(); window.scrollTo(0,0);
+  });
+
+  document.getElementById('view').addEventListener('click', function(e){
+    var b = e.target.closest('[data-act]'); if(!b) return;
+    var act = b.getAttribute('data-act'), id = b.getAttribute('data-id');
+    if(act==='toggle') toggleTask(id);
+    else if(act==='redeem') redeem(id);
+    else if(act==='accent'){ S.accent = b.getAttribute('data-c'); save(); render(); }
+    else if(act==='add-task'){
+      S.tasks.push({id:uid(), title:'新しいタスク', when:'放課後', mins:10, pts:10}); save(); render();
+      var ins = document.querySelectorAll('[data-task][data-f="title"]'); var last = ins[ins.length-1];
+      if(last){ last.focus(); last.select(); }
+    }
+    else if(act==='del-task'){
+      var t = S.tasks.filter(function(x){return x.id===id;})[0];
+      modal({title:'「'+(t?t.title:'')+'」を削除する？', body:'これまでの記録のポイントはそのまま残ります。', ok:'削除する', danger:true,
+        onOk:function(){ S.tasks = S.tasks.filter(function(x){return x.id!==id;}); save(); render(); toast('削除しました'); }});
+    }
+    else if(act==='add-rw'){
+      S.rewards.push({id:uid(), title:'新しいごほうび', cost:100}); save(); render();
+      var ri = document.querySelectorAll('[data-rw][data-f="title"]'); var lr = ri[ri.length-1];
+      if(lr){ lr.focus(); lr.select(); }
+    }
+    else if(act==='del-rw'){
+      var r = S.rewards.filter(function(x){return x.id===id;})[0];
+      modal({title:'「'+(r?r.title:'')+'」を削除する？', ok:'削除する', danger:true,
+        onOk:function(){ S.rewards = S.rewards.filter(function(x){return x.id!==id;}); save(); render(); toast('削除しました'); }});
+    }
+    else if(act==='adj'){
+      var n = parseInt(b.getAttribute('data-n'),10);
+      S.points = Math.max(0, S.points + n); save(); render();
+    }
+    else if(act==='unlock'){
+      var v = (document.getElementById('pin-in')||{}).value||'';
+      if(v===S.pin){ unlocked = true; render(); }
+      else { document.getElementById('pin-err').textContent = '暗証番号がちがいます'; }
+    }
+    else if(act==='set-pin'){
+      var p = (document.getElementById('f-pin')||{}).value||'';
+      if(!/^[0-9]{4,8}$/.test(p)){ document.getElementById('setpin-err').textContent = '4〜8桁の数字で入れてください'; return; }
+      S.pin = p; unlocked = true; save(); render(); toast('設定をロックしました');
+    }
+    else if(act==='clear-pin'){
+      modal({title:'ロックを外す？', body:'暗証番号なしで設定を開けるようになります。', ok:'外す',
+        onOk:function(){ S.pin=''; save(); render(); toast('ロックを外しました'); }});
+    }
+    else if(act==='reset'){
+      modal({title:'すべてのデータを消す？', body:'タスク、ごほうび、ポイント、記録がすべて初期状態に戻ります。元に戻せません。', ok:'消す', danger:true,
+        onOk:function(){ S = defaults(); unlocked = false; save(); tab='today'; render(); toast('最初の状態に戻しました'); }});
+    }
+  });
+
+  document.getElementById('view').addEventListener('keydown', function(e){
+    if(e.key==='Enter' && e.target.id==='pin-in'){ var b=document.querySelector('[data-act="unlock"]'); if(b) b.click(); }
+  });
+
+  document.getElementById('view').addEventListener('change', function(e){
+    var el = e.target;
+    var set = el.getAttribute('data-set');
+    if(set==='name'){ S.name = el.value.trim().slice(0,20); save(); return; }
+    if(set==='weeklyGoal'){ S.weeklyGoal = num(el.value, 300, 0, 100000); el.value = S.weeklyGoal; save(); return; }
+    var tid = el.getAttribute('data-task'), rid = el.getAttribute('data-rw'), f = el.getAttribute('data-f');
+    if(tid){
+      var t = S.tasks.filter(function(x){return x.id===tid;})[0]; if(!t) return;
+      if(f==='title') t.title = el.value.trim() || '名前のないタスク';
+      else if(f==='when') t.when = el.value;
+      else if(f==='mins') { t.mins = num(el.value,10,0,600); el.value=t.mins; }
+      else if(f==='pts') { t.pts = num(el.value,10,0,10000); el.value=t.pts; }
+      save();
+    }
+    if(rid){
+      var r = S.rewards.filter(function(x){return x.id===rid;})[0]; if(!r) return;
+      if(f==='title') r.title = el.value.trim() || '名前のないごほうび';
+      else if(f==='cost') { r.cost = num(el.value,100,0,100000); el.value=r.cost; }
+      save();
+    }
+  });
+
+  function checkDay(){ if(todayKey()!==renderedDay && tab!=='settings') render(); }
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) checkDay(); });
+  setInterval(checkDay, 60000);
+
+  save();
+  render();
+})();
+</script>
+</body>
+</html>
