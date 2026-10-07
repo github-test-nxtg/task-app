@@ -295,6 +295,7 @@ button.cd:hover{background:var(--surface2)}
   var unlocked = false;
   var calOffset = 0;
   var selDay = '';
+  var editing = false; // false | true | 'pin'
   var renderedDay = '';
 
   function pad(n){ return (n<10?'0':'')+n; }
@@ -386,11 +387,16 @@ button.cd:hover{background:var(--surface2)}
   }
 
   /* ---------- actions ---------- */
-  function toggleTask(id){
+  function toggleTask(id, k){
     var t = S.tasks.filter(function(x){return x.id===id;})[0]; if(!t) return;
-    var k = todayKey(), d = day(k);
+    k = k || todayKey();
+    var d = day(k);
     var i = d.done.indexOf(id);
-    if(i>-1){ d.done.splice(i,1); S.points = Math.max(0, S.points - t.pts); d.earned -= t.pts; }
+    if(i>-1){
+      var was = (d.names && d.names[id]) ? d.names[id].pts : t.pts;
+      d.done.splice(i,1); S.points = Math.max(0, S.points - was); d.earned -= was;
+      if(d.names) delete d.names[id];
+    }
     else {
       d.done.push(id); S.points += t.pts; d.earned += t.pts;
       if(!d.names) d.names = {};
@@ -525,7 +531,30 @@ button.cd:hover{background:var(--surface2)}
       var ids = sdd ? sdd.done : [];
       var earned = sdd ? Math.max(0, sdd.earned||0) : 0;
       h += '<div class="dd-hd"><b>'+(sd.getMonth()+1)+'月'+sd.getDate()+'日（'+WD[sd.getDay()]+'）</b>'+(earned?'<span>+'+earned+'pt</span>':'')+'</div>';
-      if(!ids.length){
+      if(editing==='pin'){
+        h += '<p class="none">記録をつけるには、家の人の暗証番号を入れてください。</p>'+
+          '<input id="pin-in2" class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" aria-label="暗証番号">'+
+          '<div class="err" id="pin-err2"></div>'+
+          '<div class="row-f two" style="margin-top:0"><button type="button" class="btn ghost" data-act="edit-done">やめる</button>'+
+          '<button type="button" class="btn" data-act="unlock-edit">開く</button></div>';
+      } else if(editing){
+        h += '<div class="sub">タップして記録をつける・外す</div><div class="list">';
+        S.tasks.forEach(function(t){
+          var dn = ids.indexOf(t.id)>-1;
+          h += '<button type="button" class="task'+(dn?' done':'')+'" data-act="toggle-past" data-id="'+t.id+'" aria-pressed="'+dn+'">'+
+            '<span class="ic '+whenCls(t.when)+'">'+svg(t.when,22)+'</span>'+
+            '<span class="tx"><b>'+esc(t.title)+'</b><small>'+esc(t.when)+'</small></span>'+
+            '<span class="pts">+'+t.pts+'pt</span>'+
+            '<span class="chk">'+(dn?svg('check',20,3):'')+'</span></button>';
+        });
+        ids.forEach(function(id){
+          if(S.tasks.some(function(x){return x.id===id;})) return;
+          var sv = sdd.names && sdd.names[id];
+          h += '<div class="task done" aria-label="削除したタスク"><span class="tx"><b>'+esc(sv?sv.title:'（削除したタスク）')+'</b><small>削除したタスクなので変更できません</small></span></div>';
+        });
+        if(!S.tasks.length) h += '<p class="none">タスクがありません。「設定」から追加してください。</p>';
+        h += '</div><button type="button" class="btn" data-act="edit-done">完了</button>';
+      } else if(!ids.length){
         h += '<p class="none">この日のタスクの記録はありません。</p>';
       } else {
         h += '<div class="sub">できたタスク</div><ul>';
@@ -544,6 +573,9 @@ button.cd:hover{background:var(--surface2)}
         h += '<div class="sub">交換したごほうび</div><ul>';
         got.forEach(function(x){ h += '<li><span class="mk gift">'+svg('gift',16,2.2)+'</span>'+esc(x.title)+'<em>−'+x.cost+'pt</em></li>'; });
         h += '</ul>';
+      }
+      if(!editing){
+        h += '<button type="button" class="btn ghost" data-act="edit-day">'+(ids.length?'この日の記録を直す':'この日の記録をつける')+'</button>';
       }
     }
     h += '</div></section>';
@@ -641,7 +673,7 @@ button.cd:hover{background:var(--surface2)}
     var b = e.target.closest('[data-tab]'); if(!b) return;
     tab = b.getAttribute('data-tab');
     if(tab!=='settings') unlocked = false;
-    calOffset = 0; selDay = '';
+    calOffset = 0; selDay = ''; editing = false;
     render(); window.scrollTo(0,0);
   });
 
@@ -650,10 +682,25 @@ button.cd:hover{background:var(--surface2)}
     var act = b.getAttribute('data-act'), id = b.getAttribute('data-id');
     if(act==='toggle') toggleTask(id);
     else if(act==='redeem') redeem(id);
-    else if(act==='cal-prev'){ calOffset = Math.max(-24, calOffset-1); selDay=''; render(); }
-    else if(act==='cal-next'){ calOffset = Math.min(0, calOffset+1); selDay=''; render(); }
+    else if(act==='cal-prev'){ calOffset = Math.max(-24, calOffset-1); selDay=''; editing=false; render(); }
+    else if(act==='cal-next'){ calOffset = Math.min(0, calOffset+1); selDay=''; editing=false; render(); }
+    else if(act==='edit-day' || act==='edit-done' || act==='unlock-edit' || act==='toggle-past'){
+      var ys = window.scrollY;
+      if(act==='edit-day'){ editing = (S.pin && !unlocked) ? 'pin' : true; render(); }
+      else if(act==='edit-done'){ editing = false; render(); }
+      else if(act==='unlock-edit'){
+        var pv = (document.getElementById('pin-in2')||{}).value||'';
+        if(pv===S.pin){ unlocked = true; editing = true; render(); }
+        else { document.getElementById('pin-err2').textContent = '暗証番号がちがいます'; return; }
+      }
+      else if(act==='toggle-past' && selDay){ toggleTask(id, selDay); }
+      window.scrollTo(0, ys);
+      if(editing==='pin'){ var pi=document.getElementById('pin-in2'); if(pi) pi.focus({preventScroll:true}); }
+      else if(act==='toggle-past'){ var tb=document.querySelector('[data-act="toggle-past"][data-id="'+id+'"]'); if(tb) tb.focus({preventScroll:true}); }
+    }
     else if(act==='pick-day'){
       var pk = b.getAttribute('data-k');
+      editing = false;
       selDay = (selDay===pk) ? '' : pk;
       var y0 = window.scrollY; render(); window.scrollTo(0, y0);
       var nb = document.querySelector('[data-act="pick-day"][data-k="'+pk+'"]'); if(nb) nb.focus({preventScroll:true});
@@ -705,6 +752,7 @@ button.cd:hover{background:var(--surface2)}
 
   document.getElementById('view').addEventListener('keydown', function(e){
     if(e.key==='Enter' && e.target.id==='pin-in'){ var b=document.querySelector('[data-act="unlock"]'); if(b) b.click(); }
+    if(e.key==='Enter' && e.target.id==='pin-in2'){ var b2=document.querySelector('[data-act="unlock-edit"]'); if(b2) b2.click(); }
   });
 
   document.getElementById('view').addEventListener('change', function(e){
